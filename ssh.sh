@@ -15,7 +15,7 @@ tmux select-pane -t 0
 
 tmux send-keys "ssh -L 8080:192.168.0.98:8080 fynn.hauptmeier@ccs-aqua.cs.upb.de" C-m
 tmux split-window -v
-tmux send-keys "ssh -L 9980:192.168.0.98:9980 fynn.hauptmeier@ccs-aqua.cs.upb.de" C-m
+tmux send-keys "ssh -L 9980:192.168.0.98:80 fynn.hauptmeier@ccs-aqua.cs.upb.de" C-m
 tmux select-pane -t 2
 tmux send-keys "ssh -L 9922:192.168.0.98:9922 fynn.hauptmeier@ccs-aqua.cs.upb.de" C-m
 tmux split-window -v

@@ -13,7 +13,7 @@ VBoxManage modifyvm $VMNAME \
     --nic2 "nat" \
     --nictype2 "82540EM" \
     --natpf2 "ssh,tcp,,9922,,22" \
-    --natpf2 "openc2x,tcp,,1188,,1188" \
+    --natpf2 "openc2x,tcp,,9988,,1188" \
     --natpf2 "luci,tcp,,9980,,80" && \
 VBoxManage storagectl $VMNAME \
     --name "SATA Controller" \
