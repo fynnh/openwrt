@@ -73,14 +73,14 @@ case "$MAC" in
     echo "Setting values for apu5"
     echo "apu5" > /proc/sys/kernel/hostname
     ifconfig br-lan 10.0.197.105
-    # setup_ocb 192.168.99.105
+    setup_ocb 192.168.99.105
     setup_leds_apu2 wlan0
   ;;
   "00:0d:b9:48:4f:b8")
     echo "Setting values for apu6"
     echo "apu6" > /proc/sys/kernel/hostname
     ifconfig br-lan 10.0.197.106
-    # setup_ocb 192.168.99.106
+    setup_ocb 192.168.99.106
     setup_leds_apu2 wlan0
   ;;
 esac
