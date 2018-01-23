@@ -83,6 +83,12 @@ case "$MAC" in
     setup_ocb 192.168.99.106
     setup_leds_apu2 wlan0
   ;;
+  "00:0d:b9:2e:d1:40")
+    echo "Setting values for alix5"
+    echo "alix5" > /proc/sys/kernel/hostname
+    ifconfig br-lan 10.0.197.205
+    setup_ocb 192.168.99.205
+  ;;
 esac
 
 
