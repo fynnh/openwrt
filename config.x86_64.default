@@ -4,7 +4,7 @@ CONFIG_VDI_IMAGES=y
 CONFIG_PACKAGE_kmod-pcnet32=y
 CONFIG_PACKAGE_openssh-sftp-server=y
 
-
+CONFIG_PACKAGE_valgrind=y
 
 
 
