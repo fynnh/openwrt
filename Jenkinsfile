@@ -23,8 +23,7 @@ for(int i=0; i< axisTargets.size(); i++) {
 				dir('firmware') {
 					sh "./scripts/feeds update -a"
 					sh "./scripts/feeds install -a"
-					sh "cp config.${target}.default .config"
-					sh "cat config.default >> .config"
+					sh "./create_config.sh ${target}"
 					sh "make defconfig"
 					sh "make -j2 V=s"
 				}
@@ -47,11 +46,11 @@ stage('Checkout') {
 }
 
 stage ("Build") {
-    parallel build_tasks
+	parallel build_tasks
 }
 
 stage ("Archive") {
-    parallel archive_tasks
+	parallel archive_tasks
 }
 
 
