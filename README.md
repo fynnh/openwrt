@@ -4,8 +4,8 @@ To build the firmware:
 
 * Update the feeds:
 ```
-./scripts/feeds/update -a
-./scripts/feeds/install -a
+./scripts/feeds update -a
+./scripts/feeds install -a
 ```
 * Create the configuration:
 ```
