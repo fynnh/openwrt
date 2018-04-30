@@ -7,7 +7,7 @@ To build the firmware:
 ./scripts/feeds update -a
 ./scripts/feeds install -a
 ```
-* Create the configuration:
+* Create the configuration, allowed architectures are x86_64, x86_geode, ar71xx_generic:
 ```
 ./create_configuration.sh x86_64
 make defconfig
