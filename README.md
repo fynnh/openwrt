@@ -9,7 +9,7 @@ To build the firmware:
 ```
 * Create the configuration, allowed architectures are x86_64, x86_geode, ar71xx_generic:
 ```
-./create_configuration.sh x86_64
+./create_config.sh x86_64
 make defconfig
 ```
 * Build
