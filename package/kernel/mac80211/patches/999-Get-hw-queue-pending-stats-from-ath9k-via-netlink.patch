@@ -27,88 +27,45 @@ index 981ca7c..e6f096b 100644
  	struct survey_info survey[ATH9K_NUM_CHANNELS];
  
 +	struct flush_info hw_q_flush_info;
-+
++	u32 flush_hw_q_pending;
+ 	spinlock_t intr_lock;
  	struct tasklet_struct intr_tq;
  	struct tasklet_struct bcon_tasklet;
  	struct ath_hw *sc_ah;
-@@ -1044,6 +1046,7 @@ struct ath_softc {
- 	atomic_t wow_sleep_proc_intr; /* in the middle of WoW sleep ? */
- 	u32 wow_intr_before_sleep;
- #endif
-+	u32 flush_hw_q_pending;
- };
- 
- /********/
+
 diff --git a/drivers/net/wireless/ath/ath9k/debug.c b/drivers/net/wireless/ath/ath9k/debug.c
 index b037762..60d7281 100644
 --- a/drivers/net/wireless/ath/ath9k/debug.c
 +++ b/drivers/net/wireless/ath/ath9k/debug.c
-@@ -617,31 +617,32 @@ static int read_file_xmit(struct seq_file *file, void *data)
- {
- 	struct ath_softc *sc = file->private;
+@@ -593,7 +593,7 @@
+ 	struct ieee80211_hw *hw = dev_get_drvdata(file->private);
+ 	struct ath_softc *sc = hw->priv;
  
 -	seq_printf(file, "%30s %10s%10s%10s\n\n", "BE", "BK", "VI", "VO");
--
--	PR("MPDUs Queued:    ", queued);
--	PR("MPDUs Completed: ", completed);
--	PR("MPDUs XRetried:  ", xretries);
--	PR("Aggregates:      ", a_aggr);
--	PR("AMPDUs Queued HW:", a_queued_hw);
--	PR("AMPDUs Queued SW:", a_queued_sw);
--	PR("AMPDUs Completed:", a_completed);
--	PR("AMPDUs Retried:  ", a_retries);
--	PR("AMPDUs XRetried: ", a_xretries);
--	PR("TXERR Filtered:  ", txerr_filtered);
--	PR("FIFO Underrun:   ", fifo_underrun);
--	PR("TXOP Exceeded:   ", xtxop);
--	PR("TXTIMER Expiry:  ", timer_exp);
--	PR("DESC CFG Error:  ", desc_cfg_err);
--	PR("DATA Underrun:   ", data_underrun);
--	PR("DELIM Underrun:  ", delim_underrun);
--	PR("TX-Pkts-All:     ", tx_pkts_all);
--	PR("TX-Bytes-All:    ", tx_bytes_all);
--	PR("HW-put-tx-buf:   ", puttxbuf);
--	PR("HW-tx-start:     ", txstart);
--	PR("HW-tx-proc-desc: ", txprocdesc);
--	PR("TX-Failed:       ", txfailed);
--
 +	seq_printf(file, "%38s %10s%10s%10s\n\n", "BE", "BK", "VI", "VO");
-+
-+	PR("MPDUs Queued:            ", queued);
-+	PR("MPDUs Completed:         ", completed);
-+	PR("MPDUs XRetried:          ", xretries);
-+	PR("Aggregates:              ", a_aggr);
-+	PR("AMPDUs Queued HW:        ", a_queued_hw);
-+	PR("AMPDUs Queued SW:        ", a_queued_sw);
-+	PR("AMPDUs Completed:        ", a_completed);
-+	PR("AMPDUs Retried:          ", a_retries);
-+	PR("AMPDUs XRetried:         ", a_xretries);
-+	PR("TXERR Filtered:          ", txerr_filtered);
-+	PR("FIFO Underrun:           ", fifo_underrun);
-+	PR("TXOP Exceeded:           ", xtxop);
-+	PR("TXTIMER Expiry:          ", timer_exp);
-+	PR("DESC CFG Error:          ", desc_cfg_err);
-+	PR("DATA Underrun:           ", data_underrun);
-+	PR("DELIM Underrun:          ", delim_underrun);
-+	PR("TX-Pkts-All:             ", tx_pkts_all);
-+	PR("TX-Bytes-All:            ", tx_bytes_all);
-+	PR("HW-put-tx-buf:           ", puttxbuf);
-+	PR("HW-tx-start:             ", txstart);
-+	PR("HW-tx-proc-desc:         ", txprocdesc);
-+	PR("TX-Failed:               ", txfailed);
+ 
+ 	PR("MPDUs Queued:    ", queued);
+ 	PR("MPDUs Completed: ", completed);
+@@ -616,6 +616,8 @@
+ 	PR("HW-tx-start:     ", txstart);
+ 	PR("HW-tx-proc-desc: ", txprocdesc);
+ 	PR("TX-Failed:       ", txfailed);
 +	PR("HW-flush-required:       ", hw_flush_required);
 +	PR("HW-flush-not-required:   ", hw_flush_not_required);
+ 
  	return 0;
  }
+@@ -1603,6 +1605,9 @@
  
-@@ -1325,5 +1326,7 @@ int ath9k_init_debug(struct ath_hw *ah)
- 			    sc, &fops_ackto);
- #endif
- 
+ 	debugfs_create_u16("airtime_flags", S_IRUSR | S_IWUSR,
+ 			   sc->debug.debugfs_phy, &sc->airtime_flags);
++			   
 +	debugfs_create_u32("flush_hw_q_pending", S_IRUGO | S_IWUGO,
 +				sc->debug.debugfs_phy, &sc->flush_hw_q_pending);
+ 
  	return 0;
  }
+
 diff --git a/drivers/net/wireless/ath/ath9k/debug.h b/drivers/net/wireless/ath/ath9k/debug.h
 index a8e9319..40f5646 100644
 --- a/drivers/net/wireless/ath/ath9k/debug.h
@@ -311,7 +268,7 @@ diff --git a/net/mac80211/cfg.c b/net/mac80211/cfg.c
 index e75d5c5..cb3f9e0 100644
 --- a/net/mac80211/cfg.c
 +++ b/net/mac80211/cfg.c
-@@ -501,6 +501,14 @@ static int ieee80211_dump_survey(struct wiphy *wiphy, struct net_device *dev,
+@@ -664,6 +664,16 @@
  	return drv_get_survey(local, idx, survey);
  }
  
@@ -323,17 +280,20 @@ index e75d5c5..cb3f9e0 100644
 +	return drv_get_flush_stats(local, idx, survey);
 +}
 +
++
++
  static int ieee80211_get_station(struct wiphy *wiphy, struct net_device *dev,
  				 const u8 *mac, struct station_info *sinfo)
  {
-@@ -3702,6 +3710,7 @@ const struct cfg80211_ops mac80211_config_ops = {
+@@ -3606,6 +3616,7 @@
  	.get_station = ieee80211_get_station,
  	.dump_station = ieee80211_dump_station,
  	.dump_survey = ieee80211_dump_survey,
 +	.dump_flush_stats = ieee80211_dump_flush_stats,
- #ifdef CONFIG_MAC80211_MESH
+ #ifdef CPTCFG_MAC80211_MESH
  	.add_mpath = ieee80211_add_mpath,
  	.del_mpath = ieee80211_del_mpath,
+
 diff --git a/net/mac80211/driver-ops.h b/net/mac80211/driver-ops.h
 index 2ebc9ea..2fd6531 100644
 --- a/net/mac80211/driver-ops.h
@@ -398,10 +358,10 @@ index a17d6bc..1103b5c 100644
 +	if (nla_put_u32(msg, NL80211_FLUSH_NOT_REQ_VO, survey->vo_flush_not_req))
 +		goto nla_put_failure;
 +
-+	nla_nest_end(msg, infoattr);
++	int ret = nla_nest_end(msg, infoattr);
 +
-+	return genlmsg_end(msg, hdr);
-+
++	genlmsg_end(msg, hdr);
++	return ret;
 +
 + nla_put_failure:
 +	genlmsg_cancel(msg, hdr);
